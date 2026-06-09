@@ -1,0 +1,30 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; font-family: Arial, sans-serif; background: #10131a; color: #eef2ff; }
+#app { display: grid; grid-template-columns: 380px 1fr; width: 100vw; height: 100vh; overflow: hidden; }
+.panel { padding: 16px; background: #1b2030; border-right: 1px solid #32394f; overflow-y: auto; }
+.viewer { position: relative; overflow: hidden; touch-action: none; cursor: grab; }
+.viewer.panning { cursor: grabbing; }
+h1 { margin: 0 0 8px; font-size: 21px; }
+h2 { margin: 18px 0 8px; font-size: 15px; color: #d6ddf0; }
+.small { font-size: 12px; line-height: 1.45; color: #aeb8ce; }
+label { display: block; margin: 12px 0 6px; font-size: 13px; color: #d9e1f2; }
+.checkbox-row label { display: inline-flex; align-items: center; gap: 8px; margin: 8px 0; }
+.button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.button-grid button { width: 100%; }
+input:not([type="checkbox"]), select, button { width: 100%; border-radius: 8px; border: 1px solid #3a4258; background: #111622; color: #fff; padding: 9px 10px; }
+button { background: #3f6df6; border: 0; cursor: pointer; font-weight: 700; margin-top: 8px; }
+button.secondary { background: #343b50; }
+button.danger { background: #922d33; }
+button.active { background: #1e5bf5; border-color: #7da9ff; color: #fff; transform: translateY(-1px); }
+button.active:hover { background: #2a6ef7; }
+.status { margin-top: 12px; padding: 10px; border-radius: 8px; background: #101520; color: #cbd5e1; white-space: pre-wrap; font-size: 12px; border: 1px solid #293146; }
+.list { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow: auto; }
+.slot-row { display: grid; grid-template-columns: 1fr 74px; gap: 8px; align-items: center; padding: 7px; background: #121824; border: 1px solid #2b3348; border-radius: 7px; cursor: pointer; }
+.slot-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.slot-row button { margin: 0; padding: 6px 8px; font-size: 11px; }
+.slot-row.marked { border-color: #ffd166; background: #272316; }
+.badge { display:inline-block; margin:2px 4px 2px 0; padding:2px 6px; border-radius:999px; background:#293044; font-size:11px; }
+.badge.ok { background:#1f5132; }
+.badge.warn { background:#674923; }
+.badge.error { background:#6d2730; }
+canvas { display: block; }
