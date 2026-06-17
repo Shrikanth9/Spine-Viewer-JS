@@ -1,29 +1,50 @@
 # Spine Viewer JS
 
-Browser-based Spine viewer that loads Spine skeleton, atlas, and texture files at runtime via user upload, rendered with JavaScript, PixiJS 8, and `@esotericsoftware/spine-pixi-v8`.
+A browser-based Spine viewer and debugging utility built with PixiJS 8, Vite, and `@esotericsoftware/spine-pixi-v8`.
 
-## Expected workflow
+The viewer loads Spine assets from local file uploads. It is useful for quickly checking Spine exports, textures, slots, bounds, skins, events, and animation track behavior before integrating the asset into a game codebase.
 
-1. Upload the Spine skeleton and atlas together:
+## Features
 
-```txt
-main_layout_spine.json
-main_layout_spine.atlas
-```
+- Runtime upload for Spine skeleton files: `.json`, `.spine`, `.skel`
+- Runtime upload for matching `.atlas` files
+- Skeleton format detection by file content, so JSON skeletons named `.spine` are handled correctly
+- Texture source modes:
+  - Loose sprite images
+  - TexturePacker spritesheet JSON + image files
+- TexturePacker multipack support when all related JSON and image files are uploaded together
+- Rotated TexturePacker frame support
+- Animation playback by selected Spine track number
+- Multiple animations running at the same time on separate tracks
+- Track clearing for selected track or all tracks
+- Skin switching
+- Slot list and slot / attachment inspector
+- Spine bounds, slot transform points, and attachment bounds preview
+- `rm_` slot click-to-mark support
+- Spine event log
+- Zoom and pan support
 
-2. Choose the texture source:
+## Getting started
 
-- **Sprites**: upload loose images where image names match atlas region names.
-- **Spritesheets**: upload TexturePacker spritesheet `.json` plus its matching image. For multipacks, upload all related JSON + PNG files together.
-
-## Run
+Install dependencies:
 
 ```bash
 npm install
+```
+
+Start the dev server:
+
+```bash
 npm run dev
 ```
 
-Open the Vite URL.
+Open the root URL shown by Vite, usually:
+
+```txt
+http://localhost:5173/
+```
+
+Do not open `dist/index.html` while running the dev server. The `dist` folder is only for production build output.
 
 ## Build
 
@@ -31,30 +52,77 @@ Open the Vite URL.
 npm run build
 ```
 
-The production build outputs static bundles under `dist/`.
+Preview the production build:
 
-## Features
+```bash
+npm run preview
+```
 
-- Upload `.json`, `.spine`, or `.skel` skeleton plus matching `.atlas`. `.spine` files are auto-detected as JSON or binary by content, not only by extension.
-- Texture source selector: loose sprites or spritesheet JSON + image.
-- Slot and attachment inspector.
-- Spine bounds, slot transform points, and attachment bounds preview.
-- Animation playback with selectable Spine track number.
-- Multiple animations can play together on different tracks.
-- Higher track numbers naturally override lower tracks when both animate the same bone/slot, matching Spine runtime behavior.
-- Active track list showing track number, animation name, loop status, and progress percentage.
-- Clear selected track or clear all tracks.
-- Skin switching.
-- RM slot auto-marking: click an `rm_` slot to toggle its transform marker. No separate Mark button.
-- Event log.
+## Upload workflow
 
-## Important
+Upload the Spine skeleton and atlas together:
 
-The Spine runtime version must match the Spine editor export version. This project uses `@esotericsoftware/spine-pixi-v8`. If your skeleton was exported from a different Spine major/minor version, update the runtime version accordingly.
+```txt
+main_layout_spine.spine
+main_layout_spine.atlas
+```
 
+or:
 
-## Important run note
+```txt
+main_layout_spine.json
+main_layout_spine.atlas
+```
 
-- For development, run `npm run dev` and open the root URL shown by Vite, usually `http://localhost:5173/`. Do not open `/dist/index.html` through the dev server.
-- For production build testing, run `npm run build` and then `npm run preview`.
-- Vite `base` is set to `./` so the built `dist/index.html` uses relative `./static/...` asset paths. This avoids missing `/static/index-*.js` errors when opening the build from a subfolder.
+Then choose one texture source mode.
+
+### Sprites mode
+
+Use this when every atlas region has its own image file.
+
+Example:
+
+```txt
+main_layout_spine.spine
+main_layout_spine.atlas
+button_play.png
+logo.png
+panel_bg.png
+```
+
+### Spritesheets mode
+
+Use this when textures are packed using TexturePacker JSON.
+
+For multipacks, upload all related files together:
+
+```txt
+ads_ss_0.json
+ads_ss_0.png
+ads_ss_1.json
+ads_ss_1.png
+ads_ss_2.json
+ads_ss_2.png
+```
+
+The spritesheet frame names should match the Spine atlas region names.
+
+## Project structure
+
+```txt
+src/
+  main.js                     Application bootstrap and viewer UI behavior
+  style.css                   Viewer styling
+  spine/
+    atlasParser.js            Minimal Spine atlas parser used for uploaded assets
+    skeletonAsset.js          Skeleton JSON / binary detection and parsing preparation
+    textureAtlasBuilder.js    Texture source handling for sprites and spritesheets
+  ui/
+    template.js               Static UI template
+  utils/
+    index.js                  Shared utility helpers
+```
+
+## Version note
+
+Spine runtime versions should match the Spine editor/export version used by the art pipeline. This project currently uses `@esotericsoftware/spine-pixi-v8`.

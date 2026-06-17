@@ -1,18 +1,19 @@
 {
-  "name": "spine-viewer-js-final",
+  "name": "spine-viewer-js",
   "version": "1.0.0",
-  "description": "Browser Spine viewer with runtime file upload support, PixiJS rendering, and Vite build output under dist/static.",
+  "description": "Browser-based Spine viewer and debugging utility for uploaded Spine assets.",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "check": "npm run build"
   },
   "dependencies": {
-    "@esotericsoftware/spine-pixi-v8": "~4.2.0",
-    "pixi.js": "^8.5.2",
-    "vite": "latest"
+    "@esotericsoftware/spine-pixi-v8": "4.2.119",
+    "pixi.js": "8.19.0",
+    "vite": "8.0.16"
   },
   "devDependencies": {}
 }
