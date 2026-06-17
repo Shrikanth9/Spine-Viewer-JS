@@ -19,12 +19,29 @@ button.active { background: #1e5bf5; border-color: #7da9ff; color: #fff; transfo
 button.active:hover { background: #2a6ef7; }
 .status { margin-top: 12px; padding: 10px; border-radius: 8px; background: #101520; color: #cbd5e1; white-space: pre-wrap; font-size: 12px; border: 1px solid #293146; }
 .list { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow: auto; }
-.slot-row { display: grid; grid-template-columns: 1fr 74px; gap: 8px; align-items: center; padding: 7px; background: #121824; border: 1px solid #2b3348; border-radius: 7px; cursor: pointer; }
+.slot-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 7px; background: #121824; border: 1px solid #2b3348; border-radius: 7px; cursor: pointer; }
 .slot-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-.slot-row button { margin: 0; padding: 6px 8px; font-size: 11px; }
 .slot-row.marked { border-color: #ffd166; background: #272316; }
+
+.slot-row.rm-slot { border-color: #3a4760; }
+.slot-status { font-size: 10px; color: #aeb8ce; padding: 3px 7px; border-radius: 999px; background: #253044; white-space: nowrap; }
+.slot-row.marked .slot-status { background: #6b4c11; color: #ffe2a4; }
 .badge { display:inline-block; margin:2px 4px 2px 0; padding:2px 6px; border-radius:999px; background:#293044; font-size:11px; }
 .badge.ok { background:#1f5132; }
 .badge.warn { background:#674923; }
 .badge.error { background:#6d2730; }
 canvas { display: block; }
+.upload-section { margin-top: 8px; }
+.hidden { display: none; }
+.checkbox-row.stacked { display: flex; flex-direction: column; gap: 2px; }
+.report-box { padding: 9px; border: 1px solid #2b3348; border-radius: 8px; background: #121824; min-height: 36px; }
+.report-title { margin-top: 8px; color: #d6ddf0; font-weight: 700; }
+.compact-list { margin: 6px 0 0 18px; padding: 0; }
+.compact-list li { margin: 2px 0; }
+.muted-line { color: #8793aa; }
+.slot-row.selected { border-color: #7da9ff; background: #18233a; }
+.inspector-grid { display: grid; grid-template-columns: 105px 1fr; gap: 5px 8px; }
+.inspector-grid > div:nth-child(odd) { color: #8793aa; }
+.inspector-grid code, code { background: #0d1220; border: 1px solid #283149; padding: 1px 4px; border-radius: 4px; color: #e8edf8; }
+.track-row { padding: 7px; border: 1px solid #2b3348; border-radius: 7px; background: #101520; margin-bottom: 6px; }
+.track-row.selected { border-color: #ffd166; background: #211f16; }

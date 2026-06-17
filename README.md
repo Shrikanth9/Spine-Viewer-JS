@@ -1,51 +1,20 @@
 # Spine Viewer JS
 
-Browser-based Spine viewer that loads Spine skeleton, atlas, and image files at runtime via user upload, rendered with JavaScript, PixiJS 8, and the official `@esotericsoftware/spine-pixi-v8` runtime.
+Browser-based Spine viewer that loads Spine skeleton, atlas, and texture files at runtime via user upload, rendered with JavaScript, PixiJS 8, and `@esotericsoftware/spine-pixi-v8`.
 
 ## Expected workflow
 
-User uploads Spine runtime files in two steps:
-
-1. Upload skeleton and atlas files together:
+1. Upload the Spine skeleton and atlas together:
 
 ```txt
-bonus_game_activated.json
-bonus_game_activated.atlas
+main_layout_spine.json
+main_layout_spine.atlas
 ```
 
-2. Upload image files separately:
+2. Choose the texture source:
 
-```txt
-bonus_game_activated.png
-```
-
-The app requires uploaded atlas and image files and does not fall back to `public/spine` or `public/images`.
-
-The production build now outputs static bundles under:
-
-```txt
-dist/static/
-```
-
-## Folder structure
-
-```txt
-public/
-  spine/
-    bonus_game_activated.atlas
-  images/
-    bonus_game_activated.png
-    any_other_page_or_region.png
-```
-
-## Image loading behavior
-
-The app tries two automatic image strategies:
-
-1. **Packed atlas page mode**: uses image page names from the `.atlas`, for example `bonus_game_activated.png`.
-2. **Loose image autopack mode**: if packed page images are missing/invalid, it reads region names from the `.atlas` and loads uploaded files matching those names, then creates a temporary packed canvas atlas in the browser.
-
-This keeps the UI simple: upload the Spine runtime files you want to view.
+- **Sprites**: upload loose images where image names match atlas region names.
+- **Spritesheets**: upload TexturePacker spritesheet `.json` plus its matching image. For multipacks, upload all related JSON + PNG files together.
 
 ## Run
 
@@ -56,15 +25,36 @@ npm run dev
 
 Open the Vite URL.
 
+## Build
+
+```bash
+npm run build
+```
+
+The production build outputs static bundles under `dist/`.
+
 ## Features
 
-- Upload `.json` or `.spine` skeleton plus matching `.atlas` and image files.
-- No automatic fallback to public Spine assets.
-- Animation list and playback.
+- Upload `.json`, `.spine`, or `.skel` skeleton plus matching `.atlas`. `.spine` files are auto-detected as JSON or binary by content, not only by extension.
+- Texture source selector: loose sprites or spritesheet JSON + image.
+- Slot and attachment inspector.
+- Spine bounds, slot transform points, and attachment bounds preview.
+- Animation playback with selectable Spine track number.
+- Multiple animations can play together on different tracks.
+- Higher track numbers naturally override lower tracks when both animate the same bone/slot, matching Spine runtime behavior.
+- Active track list showing track number, animation name, loop status, and progress percentage.
+- Clear selected track or clear all tracks.
 - Skin switching.
-- Replaceable slot marking.
-- Export marked slots as JSON.
+- RM slot auto-marking: click an `rm_` slot to toggle its transform marker. No separate Mark button.
+- Event log.
 
 ## Important
 
-The official Spine runtime version must match the Spine editor export version. This project uses `@esotericsoftware/spine-pixi-v8 ~4.2.0`. If your skeleton was exported from a different Spine major/minor version, update the runtime version accordingly.
+The Spine runtime version must match the Spine editor export version. This project uses `@esotericsoftware/spine-pixi-v8`. If your skeleton was exported from a different Spine major/minor version, update the runtime version accordingly.
+
+
+## Important run note
+
+- For development, run `npm run dev` and open the root URL shown by Vite, usually `http://localhost:5173/`. Do not open `/dist/index.html` through the dev server.
+- For production build testing, run `npm run build` and then `npm run preview`.
+- Vite `base` is set to `./` so the built `dist/index.html` uses relative `./static/...` asset paths. This avoids missing `/static/index-*.js` errors when opening the build from a subfolder.
