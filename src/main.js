@@ -675,7 +675,13 @@ function syncSpineStateListeners() {
 
   const listener = {
     event(entry, event) {
-      state.eventLog.unshift(`track ${entry.trackIndex ?? '?'} | ${event.name} @ ${entry.trackTime.toFixed(2)}s`);
+      const track = entry?.trackIndex ?? '?';
+      const animationName = entry?.animation?.name || 'unknown_animation';
+      const eventName = getSpineEventName(event);
+      const eventTime = Number.isFinite(event?.time) ? event.time : entry?.trackTime;
+      const timeLabel = Number.isFinite(eventTime) ? eventTime.toFixed(2) : '0.00';
+
+      state.eventLog.unshift(`track ${track} | animation: ${animationName} | event: ${eventName} @ ${timeLabel}s`);
       if (state.eventLog.length > 20) state.eventLog.length = 20;
       renderEventLog();
     },
@@ -691,6 +697,13 @@ function syncSpineStateListeners() {
   if (typeof st.addListener === 'function') {
     st.addListener(listener);
   }
+}
+
+function getSpineEventName(event) {
+  return event?.data?.name
+    || event?.name
+    || event?.stringValue
+    || 'unnamed_event';
 }
 
 function renderEventLog() {
