@@ -9,6 +9,16 @@ export function configureTextureAtlasBuilder(context) {
   renderImageReport = context.renderImageReport;
 }
 
+function getHighQualityCanvasContext(canvas) {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    throw new Error('Unable to create 2D canvas context for texture generation.');
+  }
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  return ctx;
+}
+
 export async function buildTextureAtlasForSelectedSource(atlasText, atlasInfo) {
   const mode = state.textureSourceMode || 'sprites';
 
@@ -227,7 +237,7 @@ function extractSpritesheetFrameToCanvas(sheetImage, frameData) {
 
   const dx = Number(spriteSourceSize.x ?? 0);
   const dy = Number(spriteSourceSize.y ?? 0);
-  const ctx = canvas.getContext('2d');
+  const ctx = getHighQualityCanvasContext(canvas);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   if (!rotated) {
@@ -279,7 +289,7 @@ async function buildGeneratedAtlasFromLoadedRegions(loadedRegions, report, pageN
   const canvas = document.createElement('canvas');
   canvas.width = finalCanvasWidth;
   canvas.height = canvasHeight;
-  const ctx = canvas.getContext('2d');
+  const ctx = getHighQualityCanvasContext(canvas);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   for (const region of loadedRegions) {
@@ -347,7 +357,7 @@ async function buildLooseImageAtlasFromUploads(regions) {
   const canvas = document.createElement('canvas');
   canvas.width = finalCanvasWidth;
   canvas.height = canvasHeight;
-  const ctx = canvas.getContext('2d');
+  const ctx = getHighQualityCanvasContext(canvas);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   for (const region of loadedRegions) {

@@ -4,8 +4,21 @@ import { parseAtlas } from './spine/atlasParser.js';
 import { buildTextureAtlasForSelectedSource, configureTextureAtlasBuilder } from './spine/textureAtlasBuilder.js';
 import { readSkeletonAssetFromFile } from './spine/skeletonAsset.js';
 import { clamp, escapeHtml, getFileName, removeExtension } from './utils/index.js';
-import { Application, Container, Graphics, Texture } from 'pixi.js';
+import { Application, Container, Graphics, Texture, TextureStyle } from 'pixi.js';
 import { Spine, SpineTexture, TextureAtlas, AtlasAttachmentLoader, SkeletonJson, SkeletonBinary } from '@esotericsoftware/spine-pixi-v8';
+
+
+const renderQuality = {
+  resolution: Math.max(1, window.devicePixelRatio || 1),
+  textureScaleMode: 'linear',
+  maxAnisotropy: 16
+};
+
+TextureStyle.defaultOptions = {
+  ...TextureStyle.defaultOptions,
+  scaleMode: renderQuality.textureScaleMode,
+  maxAnisotropy: renderQuality.maxAnisotropy
+};
 
 const state = {
   app: null,
@@ -94,7 +107,14 @@ boot();
 
 async function boot() {
   state.app = new Application();
-  await state.app.init({ resizeTo: els.viewer, background: '#10131a', antialias: true });
+  await state.app.init({
+    resizeTo: els.viewer,
+    background: '#10131a',
+    antialias: true,
+    autoDensity: true,
+    resolution: renderQuality.resolution,
+    hello: false
+  });
   els.viewer.appendChild(state.app.canvas);
   state.app.stage.addChild(state.spineLayer);
   state.debugGraphics = new Graphics();
@@ -681,7 +701,7 @@ function syncSpineStateListeners() {
       const eventTime = Number.isFinite(event?.time) ? event.time : entry?.trackTime;
       const timeLabel = Number.isFinite(eventTime) ? eventTime.toFixed(2) : '0.00';
 
-      state.eventLog.unshift(`track ${track} | animation: ${animationName} | event: ${eventName} @ ${timeLabel}s`);
+      state.eventLog.unshift(`track ${track} | anim: ${animationName} | event: ${eventName} @ ${timeLabel}s`);
       if (state.eventLog.length > 20) state.eventLog.length = 20;
       renderEventLog();
     },

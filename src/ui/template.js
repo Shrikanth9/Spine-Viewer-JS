@@ -42,7 +42,6 @@ export function getAppTemplate() {
       <button type="button" id="clearAllTracksBtn" class="danger">Clear All Tracks</button>
     </div>
     <div id="activeTracks" class="small report-box">No active tracks.</div>
-    <p class="small">Active track list shows progress percentage only, so looping animations will not look like an infinite timer.</p>
     <div class="button-grid">
       <button type="button" id="prevFrameBtn" class="secondary">Prev Frame</button>
       <button type="button" id="nextFrameBtn" class="secondary">Next Frame</button>
