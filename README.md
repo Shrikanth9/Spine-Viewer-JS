@@ -1,30 +1,37 @@
 # Spine Viewer JS
 
-A browser-based Spine viewer and debugging utility built with PixiJS 8, Vite, and `@esotericsoftware/spine-pixi-v8`.
+A browser-based Spine viewer built with PixiJS 8, Vite, and `@esotericsoftware/spine-pixi-v8`.
 
-The viewer loads Spine assets from local file uploads. It is useful for quickly checking Spine exports, textures, slots, bounds, skins, events, and animation track behavior before integrating the asset into a game codebase.
+The viewer loads Spine assets from local files and provides tools for validating playback, textures, skins, slots, events, bounds, and multi-track animation behavior before assets are integrated into a game.
 
 ## Features
 
-- Runtime upload for Spine skeleton files: `.json`, `.spine`, `.skel`
-- Runtime upload for matching `.atlas` files
-- Skeleton format detection by file content, so JSON skeletons named `.spine` are handled correctly
+- Load Spine skeleton files: `.json`, `.spine`, `.skel`
+- Load matching Spine atlas files: `.atlas`
+- Detect JSON skeletons even when they use a `.spine` extension
 - Texture source modes:
   - Loose sprite images
   - TexturePacker spritesheet JSON + image files
-- TexturePacker multipack support when all related JSON and image files are uploaded together
+- TexturePacker multipack support when all related JSON/image files are uploaded together
 - Rotated TexturePacker frame support
-- Animation playback by selected Spine track number
-- Multiple animations running at the same time on separate tracks
-- Track clearing for selected track or all tracks
+- High-DPI Pixi rendering with antialiasing and linear texture filtering
+- Animation playback on a selected Spine track
+- Multiple animations running together on different tracks
+- Clear selected track or all tracks
 - Skin switching
-- Slot list and slot / attachment inspector
+- Timeline scrub, frame step, pause/resume, playback speed, and loop count controls
+- Slot list and slot/attachment inspector
 - Spine bounds, slot transform points, and attachment bounds preview
-- `rm_` slot click-to-mark support
+- `rm_` slot transform markers
 - Spine event log
-- Zoom and pan support
+- Zoom and pan controls
 
-## Getting started
+## Requirements
+
+- Node.js 18 or newer
+- npm
+
+## Setup
 
 Install dependencies:
 
@@ -32,7 +39,7 @@ Install dependencies:
 npm install
 ```
 
-Start the dev server:
+Start the development server:
 
 ```bash
 npm run dev
@@ -44,9 +51,9 @@ Open the root URL shown by Vite, usually:
 http://localhost:5173/
 ```
 
-Do not open `dist/index.html` while running the dev server. The `dist` folder is only for production build output.
-
 ## Build
+
+Create a production build:
 
 ```bash
 npm run build
@@ -58,7 +65,7 @@ Preview the production build:
 npm run preview
 ```
 
-## Upload workflow
+## Asset upload workflow
 
 Upload the Spine skeleton and atlas together:
 
@@ -74,11 +81,11 @@ main_layout_spine.json
 main_layout_spine.atlas
 ```
 
-Then choose one texture source mode.
+Then choose the texture source mode.
 
 ### Sprites mode
 
-Use this when every atlas region has its own image file.
+Use this mode when each atlas region has a matching standalone image file.
 
 Example:
 
@@ -92,9 +99,9 @@ panel_bg.png
 
 ### Spritesheets mode
 
-Use this when textures are packed using TexturePacker JSON.
+Use this mode when textures are packed using TexturePacker JSON.
 
-For multipacks, upload all related files together:
+For multipacks, upload all related JSON and image files together:
 
 ```txt
 ads_ss_0.json
@@ -105,24 +112,24 @@ ads_ss_2.json
 ads_ss_2.png
 ```
 
-The spritesheet frame names should match the Spine atlas region names.
+Spritesheet frame names should match the Spine atlas region names.
 
 ## Project structure
 
 ```txt
 src/
-  main.js                     Application bootstrap and viewer UI behavior
-  style.css                   Viewer styling
+  main.js                     Application bootstrap and UI behavior
+  style.css                   Viewer styles
   spine/
-    atlasParser.js            Minimal Spine atlas parser used for uploaded assets
-    skeletonAsset.js          Skeleton JSON / binary detection and parsing preparation
-    textureAtlasBuilder.js    Texture source handling for sprites and spritesheets
+    atlasParser.js            Spine atlas parser for uploaded atlas files
+    skeletonAsset.js          Skeleton JSON/binary detection and validation
+    textureAtlasBuilder.js    Texture handling for sprites and spritesheets
   ui/
-    template.js               Static UI template
+    template.js               Static UI markup
   utils/
-    index.js                  Shared utility helpers
+    index.js                  Shared helpers
 ```
 
-## Version note
+## Notes
 
-Spine runtime versions should match the Spine editor/export version used by the art pipeline. This project currently uses `@esotericsoftware/spine-pixi-v8`.
+Spine runtime versions should match the Spine editor/export version used by the asset pipeline. This project uses `@esotericsoftware/spine-pixi-v8`.

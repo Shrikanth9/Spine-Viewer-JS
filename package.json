@@ -1,7 +1,7 @@
 {
   "name": "spine-viewer-js",
   "version": "1.0.0",
-  "description": "Browser-based Spine viewer and debugging utility for uploaded Spine assets.",
+  "description": "Browser-based Spine viewer and asset inspection utility.",
   "private": true,
   "type": "module",
   "scripts": {
