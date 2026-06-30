@@ -36,6 +36,8 @@ const state = {
   textureSourceMode: 'sprites',
   selectedSlotName: '',
   selectedTrackNumber: 0,
+  selectedAnimationName: '',
+  lastAutoPlayRequest: '',
   activeTrackSummaryHtml: '',
   debugGraphics: null,
   showSpineBounds: false,
@@ -128,8 +130,10 @@ async function boot() {
   els.imageInput.addEventListener('change', handleUploadedImageFilesChange);
   els.spritesheetInput.addEventListener('change', handleUploadedSpritesheetFilesChange);
   els.uploadedSkeletonSelect.addEventListener('change', loadSelectedSkeletonFromUploads);
-  els.animationSelect?.addEventListener('change', playSelectedAnimation);
+  els.animationSelect?.addEventListener('input', onAnimationSelectionChange);
+  els.animationSelect?.addEventListener('change', onAnimationSelectionChange);
   els.trackNumber?.addEventListener('input', onTrackNumberChange);
+  els.activeTracks?.addEventListener('click', onActiveTrackClick);
   els.playBtn?.addEventListener('click', playSelectedAnimation);
   els.clearTrackBtn?.addEventListener('click', clearSelectedTrack);
   els.clearAllTracksBtn?.addEventListener('click', clearAllTracks);
@@ -387,6 +391,8 @@ function cleanupCurrentSpine() {
   state.eventLog = [];
   state.rootMotionPreview = false;
   state.currentAnimationName = '';
+  state.selectedAnimationName = '';
+  state.lastAutoPlayRequest = '';
   state.currentTrackIndex = 0;
   state.currentTrackEntry = null;
   state.selectedTrackNumber = 0;
@@ -425,6 +431,9 @@ function populateControls() {
 
   if (currentName && animations.some((anim) => anim.name === currentName)) {
     els.animationSelect.value = currentName;
+    state.selectedAnimationName = currentName;
+  } else if (animations[0]) {
+    state.selectedAnimationName = animations[0].name;
   }
 
   els.skinSelect.innerHTML = skins
@@ -439,10 +448,40 @@ function getSkeletonData() {
 function playFirstAnimationIfAny() {
   const first = getSkeletonData()?.animations?.[0]?.name;
   if (first) {
-    els.animationSelect.value = first;
+    setSelectedAnimationName(first);
     setTrackNumber(0);
     playSelectedAnimation();
   }
+}
+
+
+function getSelectedAnimationName() {
+  const selected = els.animationSelect?.value || state.selectedAnimationName || '';
+  const animations = getSkeletonData()?.animations || [];
+  if (animations.some((anim) => anim.name === selected)) return selected;
+  return animations[0]?.name || '';
+}
+
+function setSelectedAnimationName(name) {
+  const animations = getSkeletonData()?.animations || [];
+  const fallback = animations[0]?.name || '';
+  const nextName = animations.some((anim) => anim.name === name) ? name : fallback;
+  state.selectedAnimationName = nextName;
+  if (els.animationSelect && nextName && els.animationSelect.value !== nextName) {
+    els.animationSelect.value = nextName;
+  }
+  return nextName;
+}
+
+function onAnimationSelectionChange(event) {
+  const name = setSelectedAnimationName(event?.target?.value || els.animationSelect?.value || '');
+  if (!name || !state.spine) return;
+
+  const trackNumber = getSelectedTrackNumber();
+  const requestKey = `${trackNumber}:${name}:${els.loopCheckbox?.checked ? 'loop' : 'once'}`;
+  if (state.lastAutoPlayRequest === requestKey) return;
+  state.lastAutoPlayRequest = requestKey;
+  playSelectedAnimation();
 }
 
 function getSelectedTrackNumber() {
@@ -466,18 +505,24 @@ function onTrackNumberChange() {
 function playSelectedAnimation() {
   if (!state.spine) return;
 
-  const name = els.animationSelect.value;
+  const name = getSelectedAnimationName();
   const trackNumber = getSelectedTrackNumber();
   const loop = els.loopCheckbox?.checked ?? true;
   if (!name) return;
 
+  setSelectedAnimationName(name);
   state.spine.autoUpdate = true;
   state.spine.state.timeScale = state.isPaused ? 0 : state.playbackSpeed;
 
+  // Clear the target track before setting the next animation. This avoids a
+  // looping TrackEntry continuing to drive the same track when the user selects
+  // another animation from the dropdown.
+  state.spine.state.clearTrack(trackNumber);
   const entry = state.spine.state.setAnimation(trackNumber, name, loop);
   if (entry) {
     entry.loop = loop;
     entry.timeScale = state.playbackSpeed;
+    entry.trackTime = 0;
     state.currentTrackEntry = entry;
   }
 
@@ -494,6 +539,7 @@ function clearSelectedTrack() {
   if (!state.spine) return;
   const trackNumber = getSelectedTrackNumber();
   state.spine.state.clearTrack(trackNumber);
+  state.lastAutoPlayRequest = '';
   if (trackNumber === state.currentTrackIndex) {
     state.currentTrackEntry = null;
     state.currentAnimationName = '';
@@ -506,6 +552,7 @@ function clearSelectedTrack() {
 function clearAllTracks() {
   if (!state.spine) return;
   state.spine.state.clearTracks();
+  state.lastAutoPlayRequest = '';
   state.currentTrackEntry = null;
   state.currentAnimationName = '';
   updateTimelineDisplay();
@@ -556,7 +603,7 @@ function renderActiveTracks() {
     const selected = track === getSelectedTrackNumber();
     const label = selected ? 'selected' : 'active';
     const modeLabel = entry.loop ? 'loop' : 'once';
-    return `<div class="track-row ${selected ? 'selected' : ''}">
+    return `<div class="track-row ${selected ? 'selected' : ''}" data-track="${track}" role="button" tabindex="0" title="Select track ${track}">
       <strong>Track ${track}</strong> <span class="badge ${selected ? 'warn' : 'ok'}">${label}</span><br/>
       ${escapeHtml(entry.animation.name)} <span class="muted-line">(${modeLabel})</span><br/>
       <span class="muted-line">progress ${progress.toFixed(0)}%</span>
@@ -567,6 +614,29 @@ function renderActiveTracks() {
     state.activeTrackSummaryHtml = html;
     els.activeTracks.innerHTML = html;
   }
+}
+
+
+function onActiveTrackClick(event) {
+  const row = event.target?.closest?.('.track-row[data-track]');
+  if (!row || !els.activeTracks?.contains(row)) return;
+
+  const trackNumber = Number(row.dataset.track);
+  if (!Number.isFinite(trackNumber)) return;
+
+  setTrackNumber(trackNumber);
+  const entry = getTrackEntry(trackNumber);
+  if (entry?.animation?.name) {
+    setSelectedAnimationName(entry.animation.name);
+    if (els.loopCheckbox) els.loopCheckbox.checked = !!entry.loop;
+    state.currentTrackEntry = entry;
+    state.currentAnimationName = entry.animation.name;
+  }
+
+  state.lastAutoPlayRequest = '';
+  updateTimelineDisplay();
+  renderActiveTracks();
+  setStatus(`Selected track ${trackNumber}: ${entry?.animation?.name || 'empty'}`);
 }
 
 function updatePauseButtonState() {
@@ -776,6 +846,7 @@ function updateCurrentTrackLoop() {
   try {
     const entry = getCurrentTrackEntry();
     if (entry) entry.loop = loop;
+    state.lastAutoPlayRequest = '';
     renderActiveTracks();
   } catch (e) {
     // Runtime shape can differ slightly between Spine versions.

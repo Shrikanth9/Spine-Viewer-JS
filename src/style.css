@@ -45,3 +45,11 @@ canvas { display: block; }
 .inspector-grid code, code { background: #0d1220; border: 1px solid #283149; padding: 1px 4px; border-radius: 4px; color: #e8edf8; }
 .track-row { padding: 7px; border: 1px solid #2b3348; border-radius: 7px; background: #101520; margin-bottom: 6px; }
 .track-row.selected { border-color: #ffd166; background: #211f16; }
+
+.track-row {
+  cursor: pointer;
+}
+
+.track-row:hover {
+  filter: brightness(1.08);
+}
