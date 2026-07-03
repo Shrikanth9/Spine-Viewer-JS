@@ -1,4 +1,4 @@
-# Spine Viewer JS
+# Spine Viewer
 
 A browser-based Spine viewer built with PixiJS 8, Vite, and `@esotericsoftware/spine-pixi-v8`.
 

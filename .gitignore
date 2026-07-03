@@ -1,3 +1,64 @@
+# dependencies
 node_modules/
+
+# build outputs
 dist/
+release/
+out/
+build/
+
+# electron-builder outputs
+*.blockmap
+*.exe
+*.dmg
+*.AppImage
+*.snap
+*.deb
+*.rpm
+*.msi
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# environment files
+.env
+.env.local
+.env.*.local
+
+# OS files
 .DS_Store
+Thumbs.db
+desktop.ini
+
+# editor files
+.vscode/
+.idea/
+
+# temporary files
+*.tmp
+*.temp
+.cache/
+.parcel-cache/
+
+# coverage / test output
+coverage/
+
+# vite
+.vite/
+
+# packaged archives
+*.zip
+*.rar
+*.7z
+
+# local generated/debug files
+debug_current/
+event_fix_work/
+hq_work/
+nav_fix_work/
+prod_work/
+working_fix/

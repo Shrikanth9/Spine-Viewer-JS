@@ -1,7 +1,7 @@
 export function getAppTemplate() {
   return `
   <aside class="panel">
-    <h1>Spine Viewer JS</h1>
+    <h1>Spine Viewer</h1>
     <label>Spine files (skeleton .json/.spine, .atlas)</label>
     <input id="skeletonInput" type="file" accept=".json,.spine,.skel,.atlas" multiple />
 
