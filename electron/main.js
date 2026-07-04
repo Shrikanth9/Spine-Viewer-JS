@@ -9,7 +9,7 @@ function createWindow() {
     height: 900,
     minWidth: 1100,
     minHeight: 700,
-    title: "Spine Viewer",
+    title: "Spine Viewer JS",
     backgroundColor: "#111111",
     autoHideMenuBar: true,
     webPreferences: {
