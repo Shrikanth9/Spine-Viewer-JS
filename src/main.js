@@ -34,15 +34,9 @@ const state = {
   uploadedSpritesheetFiles: [],
   uploadedFiles: [],
   textureSourceMode: 'sprites',
-  selectedSlotName: '',
   selectedTrackNumber: 0,
   selectedAnimationName: '',
   activeTrackSummaryHtml: '',
-  debugGraphics: null,
-  showSpineBounds: false,
-  showSlotBounds: false,
-  showAttachmentBounds: false,
-  lastSlotInspectorHtml: '',
   playbackSpeed: 1,
   isPaused: false,
   isScrubbing: false,
@@ -93,10 +87,6 @@ const els = {
   loopCheckbox: document.querySelector('#loopCheckbox'),
   zoomRange: document.querySelector('#zoomRange'),
   zoomValue: document.querySelector('#zoomValue'),
-  showSpineBounds: document.querySelector('#showSpineBounds'),
-  showSlotBounds: document.querySelector('#showSlotBounds'),
-  showAttachmentBounds: document.querySelector('#showAttachmentBounds'),
-  slotInspector: document.querySelector('#slotInspector'),
   slotList: document.querySelector('#slotList'),
   clearMarksBtn: document.querySelector('#clearMarksBtn'),
   imageList: document.querySelector('#imageList'),
@@ -118,9 +108,6 @@ async function boot() {
   });
   els.viewer.appendChild(state.app.canvas);
   state.app.stage.addChild(state.spineLayer);
-  state.debugGraphics = new Graphics();
-  state.debugGraphics.eventMode = 'none';
-  state.app.stage.addChild(state.debugGraphics);
 
   renderUploadedSkeletonOptions();
   updateTextureSourceUploadUi();
@@ -149,9 +136,6 @@ async function boot() {
   els.skinSelect.addEventListener('change', applySelectedSkin);
   els.loopCheckbox?.addEventListener('change', updateCurrentTrackLoop);
   els.zoomRange.addEventListener('input', onZoomChange);
-  els.showSpineBounds?.addEventListener('change', onDebugBoundsToggle);
-  els.showSlotBounds?.addEventListener('change', onDebugBoundsToggle);
-  els.showAttachmentBounds?.addEventListener('change', onDebugBoundsToggle);
   els.viewer.addEventListener('wheel', onViewerWheel, { passive: false });
   els.viewer.addEventListener('pointerdown', onViewerPointerDown);
   window.addEventListener('pointermove', onViewerPointerMove);
@@ -162,7 +146,6 @@ async function boot() {
     state.markedSlots.clear();
     syncMarkers();
     renderSlotList();
-    renderDebugBounds();
   });
   updatePauseButtonState();
 }
@@ -303,8 +286,6 @@ async function loadSpineFromUploadedFiles(skeletonFile) {
     fitSpineToView();
     populateControls();
     renderSlotList();
-    renderSlotInspector();
-    renderDebugBounds();
     playFirstAnimationIfAny();
 
     setStatus([
@@ -393,8 +374,6 @@ function cleanupCurrentSpine() {
   state.currentTrackIndex = 0;
   state.currentTrackEntry = null;
   state.selectedTrackNumber = 0;
-  state.selectedSlotName = '';
-  state.lastSlotInspectorHtml = '';
   state.zoom = 1;
   state.zoomBase = 1;
   if (els.loopCount) els.loopCount.value = '0';
@@ -410,9 +389,7 @@ function cleanupCurrentSpine() {
   els.skinSelect.innerHTML = '';
   els.slotList.innerHTML = '';
   els.imageList.innerHTML = '';
-  if (els.slotInspector) els.slotInspector.textContent = 'Load a Spine and select a slot.';
   renderActiveTracks();
-  state.debugGraphics?.clear();
 }
 
 
@@ -589,7 +566,7 @@ function renderActiveTracks() {
     const selected = track === getSelectedTrackNumber();
     const label = selected ? 'selected' : 'active';
     const modeLabel = entry.loop ? 'loop' : 'once';
-    return `<div class="track-row ${selected ? 'selected' : ''}" data-track="${track}" role="button" tabindex="0" title="Select track ${track}">
+    return `<div class="track-row" data-track="${track}" role="button" tabindex="0" title="Select track ${track}">
       <strong>Track ${track}</strong> <span class="badge ${selected ? 'warn' : 'ok'}">${label}</span><br/>
       ${escapeHtml(entry.animation.name)} <span class="muted-line">(${modeLabel})</span><br/>
       <span class="muted-line">progress ${progress.toFixed(0)}%</span>
@@ -796,8 +773,6 @@ function onAppTick() {
   if (!state.isPaused) updateTimelineDisplay();
   renderActiveTracks();
   if (state.rootMotionPreview) renderRootMotionInfo();
-  renderSlotInspector();
-  renderDebugBounds();
 }
 
 function updateTimelineDisplay() {
@@ -851,8 +826,6 @@ function setupPose() {
     state.spine.skeleton.setToSetupPose?.();
     state.spine.skeleton.setSlotsToSetupPose?.();
   }
-  renderSlotInspector();
-  renderDebugBounds();
   renderActiveTracks();
 }
 
@@ -869,8 +842,6 @@ function applySelectedSkin() {
 
   skeleton.setupPoseSlots?.();
   skeleton.setSlotsToSetupPose?.();
-  renderSlotInspector();
-  renderDebugBounds();
 }
 
 function renderSlotList() {
@@ -878,10 +849,9 @@ function renderSlotList() {
   els.slotList.innerHTML = slots.map((slot) => {
     const name = slot.name;
     const marked = state.markedSlots.has(name);
-    const selected = state.selectedSlotName === name;
     const rmSlot = isRmSlot(name);
     return `
-      <div class="slot-row ${rmSlot ? 'rm-slot' : ''} ${marked ? 'marked' : ''} ${selected ? 'selected' : ''}" data-slot="${escapeHtml(name)}">
+      <div class="slot-row ${rmSlot ? 'rm-slot' : ''} ${marked ? 'marked' : ''}" data-slot="${escapeHtml(name)}">
         <span title="${escapeHtml(name)}">${escapeHtml(name)}</span>
         ${rmSlot ? `<span class="slot-status">${marked ? 'RM marked' : 'RM'}</span>` : '<span></span>'}
       </div>`;
@@ -896,16 +866,12 @@ function renderSlotList() {
 
 function selectSlot(slotName) {
   if (!slotName) return;
-  state.selectedSlotName = slotName;
-  state.lastSlotInspectorHtml = '';
 
   if (isRmSlot(slotName)) {
     toggleSlotMark(slotName, { renderList: false });
   }
 
   renderSlotList();
-  renderSlotInspector();
-  renderDebugBounds();
 }
 
 function isRmSlot(slotName) {
@@ -918,7 +884,6 @@ function toggleSlotMark(slotName, options = {}) {
   else state.markedSlots.add(slotName);
   syncMarkers();
   if (options.renderList !== false) renderSlotList();
-  renderDebugBounds();
 }
 
 function syncMarkers() {
@@ -954,267 +919,7 @@ function createSlotMarker() {
   return wrapper;
 }
 
-function onDebugBoundsToggle() {
-  state.showSpineBounds = Boolean(els.showSpineBounds?.checked);
-  state.showSlotBounds = Boolean(els.showSlotBounds?.checked);
-  state.showAttachmentBounds = Boolean(els.showAttachmentBounds?.checked);
-  renderDebugBounds();
-}
 
-function renderSlotInspector() {
-  if (!els.slotInspector) return;
-  if (!state.spine) {
-    updateSlotInspectorHtml('Load a Spine and select a slot.');
-    return;
-  }
-
-  const slotName = state.selectedSlotName;
-  if (!slotName) {
-    updateSlotInspectorHtml('Select a slot from the slot list to inspect attachment, bone, color, and bounds.');
-    return;
-  }
-
-  const slot = getRuntimeSlot(slotName);
-  const slotData = getSlotData(slotName);
-  if (!slot && !slotData) {
-    updateSlotInspectorHtml(`Slot not found: ${escapeHtml(slotName)}`);
-    return;
-  }
-
-  const attachment = slot?.attachment || null;
-  const attachmentName = attachment?.name || slotData?.attachmentName || '(none)';
-  const bone = slot?.bone || null;
-  const color = slot?.color || null;
-  const visible = Boolean(attachment) && (!color || color.a > 0.001);
-  const attachmentBounds = getAttachmentStageBounds(slot);
-  const blendMode = formatBlendMode(slotData?.blendMode ?? slot?.data?.blendMode ?? slot?.blendMode);
-  const attachmentType = attachment?.constructor?.name || (attachment ? 'Attachment' : '(none)');
-
-  const rows = [
-    ['Slot', slotName],
-    ['Attachment', attachmentName],
-    ['Attachment type', attachmentType],
-    ['Visible', visible ? 'true' : 'false'],
-    ['Blend mode', blendMode],
-    ['Color', color ? formatColor(color) : '(runtime color unavailable)'],
-    ['Bone', bone?.data?.name || bone?.name || slotData?.boneData?.name || '(none)'],
-    ['Bone world', bone ? `x=${formatNumber(bone.worldX)}, y=${formatNumber(bone.worldY)}, rot=${formatNumber(getBoneRotation(bone))}°` : '(unavailable)'],
-    ['Bounds', attachmentBounds ? `x=${formatNumber(attachmentBounds.x)}, y=${formatNumber(attachmentBounds.y)}, w=${formatNumber(attachmentBounds.width)}, h=${formatNumber(attachmentBounds.height)}` : '(no drawable attachment bounds)']
-  ];
-
-  const html = `
-    <div class="inspector-grid">
-      ${rows.map(([label, value]) => `<div>${escapeHtml(label)}</div><div>${escapeHtml(value)}</div>`).join('')}
-    </div>`;
-  updateSlotInspectorHtml(html);
-}
-
-function updateSlotInspectorHtml(html) {
-  if (state.lastSlotInspectorHtml === html) return;
-  state.lastSlotInspectorHtml = html;
-  els.slotInspector.innerHTML = html;
-}
-
-function getRuntimeSlot(slotName) {
-  const skeleton = state.spine?.skeleton;
-  if (!skeleton || !slotName) return null;
-  if (typeof skeleton.findSlot === 'function') return skeleton.findSlot(slotName);
-  return skeleton.slots?.find((slot) => slot?.data?.name === slotName || slot?.name === slotName) || null;
-}
-
-function getSlotData(slotName) {
-  const data = getSkeletonData();
-  if (!data || !slotName) return null;
-  if (typeof data.findSlot === 'function') return data.findSlot(slotName);
-  return data.slots?.find((slot) => slot?.name === slotName) || null;
-}
-
-function renderDebugBounds() {
-  const g = state.debugGraphics;
-  if (!g) return;
-  g.clear();
-  if (!state.spine) return;
-
-  const showSpine = Boolean(state.showSpineBounds || els.showSpineBounds?.checked);
-  const showSlots = Boolean(state.showSlotBounds || els.showSlotBounds?.checked);
-  const showAttachments = Boolean(state.showAttachmentBounds || els.showAttachmentBounds?.checked);
-  if (!showSpine && !showSlots && !showAttachments) return;
-
-  try {
-    state.spine.skeleton?.updateWorldTransform?.();
-  } catch {
-    // Some runtime builds update transforms during render only.
-  }
-
-  if (showSpine) {
-    try {
-      const bounds = state.spine.getBounds();
-      drawRect(g, bounds.x, bounds.y, bounds.width, bounds.height, 0x4fc3f7, 2);
-    } catch {
-      // Bounds support varies across runtime/export versions.
-    }
-  }
-
-  const slots = getSlotsForDebugDrawing();
-
-  if (showAttachments) {
-    for (const slot of slots) {
-      drawAttachmentBounds(g, slot, slot?.data?.name === state.selectedSlotName);
-    }
-  }
-
-  if (showSlots) {
-    for (const slot of slots) {
-      drawSlotPoint(g, slot, slot?.data?.name === state.selectedSlotName);
-    }
-  }
-}
-
-function getSlotsForDebugDrawing() {
-  const skeleton = state.spine?.skeleton;
-  if (!skeleton?.slots) return [];
-  if (state.selectedSlotName) {
-    const slot = getRuntimeSlot(state.selectedSlotName);
-    return slot ? [slot] : [];
-  }
-  return skeleton.slots;
-}
-
-function drawSlotPoint(g, slot, selected) {
-  const bone = slot?.bone;
-  if (!bone) return;
-  const point = spineLocalToStagePoint(bone.worldX, bone.worldY);
-  const size = selected ? 8 : 5;
-  const color = selected ? 0xffd166 : 0xa2e665;
-  g.circle(point.x, point.y, size).fill({ color, alpha: selected ? 0.9 : 0.65 });
-  g.moveTo(point.x - size * 2, point.y).lineTo(point.x + size * 2, point.y)
-    .moveTo(point.x, point.y - size * 2).lineTo(point.x, point.y + size * 2)
-    .stroke({ width: selected ? 2 : 1, color, alpha: 0.95 });
-}
-
-function drawAttachmentBounds(g, slot, selected) {
-  if (!slot?.attachment) return;
-  const points = getAttachmentStagePoints(slot);
-  if (points.length >= 3) {
-    const color = selected ? 0xffd166 : 0xff7ab6;
-    g.moveTo(points[0].x, points[0].y);
-    for (let i = 1; i < points.length; i += 1) g.lineTo(points[i].x, points[i].y);
-    g.lineTo(points[0].x, points[0].y).stroke({ width: selected ? 2 : 1, color, alpha: selected ? 1 : 0.65 });
-  }
-
-  const bounds = getAttachmentStageBounds(slot);
-  if (bounds) {
-    drawRect(g, bounds.x, bounds.y, bounds.width, bounds.height, selected ? 0xffd166 : 0xff7ab6, selected ? 2 : 1);
-  }
-}
-
-function drawRect(g, x, y, width, height, color, lineWidth = 1) {
-  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return;
-  g.rect(x, y, width, height).stroke({ width: lineWidth, color, alpha: 0.95 });
-}
-
-function getAttachmentStageBounds(slot) {
-  const points = getAttachmentStagePoints(slot);
-  if (!points.length) return null;
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const point of points) {
-    minX = Math.min(minX, point.x);
-    minY = Math.min(minY, point.y);
-    maxX = Math.max(maxX, point.x);
-    maxY = Math.max(maxY, point.y);
-  }
-  if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) return null;
-  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
-}
-
-function getAttachmentStagePoints(slot) {
-  const localPoints = getAttachmentSpineLocalPoints(slot);
-  return localPoints.map((point) => spineLocalToStagePoint(point.x, point.y));
-}
-
-function getAttachmentSpineLocalPoints(slot) {
-  const attachment = slot?.attachment;
-  if (!attachment) return [];
-
-  if (typeof attachment.computeWorldVertices === 'function') {
-    const meshLength = Number(attachment.worldVerticesLength || 0);
-    if (meshLength > 0) {
-      try {
-        const vertices = new Float32Array(meshLength);
-        attachment.computeWorldVertices(slot, 0, meshLength, vertices, 0, 2);
-        return verticesToPoints(vertices);
-      } catch {
-        // Attachment APIs differ by runtime/export type.
-      }
-    }
-
-    try {
-      const vertices = new Float32Array(8);
-      attachment.computeWorldVertices(slot, vertices, 0, 2);
-      return verticesToPoints(vertices);
-    } catch {
-      // Attachment APIs differ by runtime/export type.
-    }
-  }
-
-  const bone = slot?.bone;
-  if (bone) return [{ x: bone.worldX, y: bone.worldY }];
-  return [];
-}
-
-function verticesToPoints(vertices) {
-  const points = [];
-  for (let i = 0; i < vertices.length; i += 2) {
-    const x = vertices[i];
-    const y = vertices[i + 1];
-    if (Number.isFinite(x) && Number.isFinite(y)) points.push({ x, y });
-  }
-  return points;
-}
-
-function spineLocalToStagePoint(x, y) {
-  const point = { x, y };
-  try {
-    if (state.spine?.worldTransform?.apply) return state.spine.worldTransform.apply(point);
-    if (state.spine?.toGlobal) return state.spine.toGlobal(point);
-  } catch {
-    // Fall through to untransformed coordinates.
-  }
-  return point;
-}
-
-function formatColor(color) {
-  const r = Math.round((color.r ?? 1) * 255).toString(16).padStart(2, '0');
-  const g = Math.round((color.g ?? 1) * 255).toString(16).padStart(2, '0');
-  const b = Math.round((color.b ?? 1) * 255).toString(16).padStart(2, '0');
-  const a = color.a ?? 1;
-  return `#${r}${g}${b}, alpha=${formatNumber(a, 2)}`;
-}
-
-function formatBlendMode(value) {
-  if (value == null) return '(default)';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number') {
-    const names = ['normal', 'additive', 'multiply', 'screen'];
-    return names[value] || String(value);
-  }
-  if (value.name) return value.name;
-  return String(value);
-}
-
-function getBoneRotation(bone) {
-  if (typeof bone.getWorldRotationX === 'function') return bone.getWorldRotationX();
-  if (Number.isFinite(bone.worldRotation)) return bone.worldRotation;
-  if (Number.isFinite(bone.rotation)) return bone.rotation;
-  return 0;
-}
-
-function formatNumber(value, digits = 1) {
-  return Number.isFinite(value) ? Number(value).toFixed(digits) : 'n/a';
-}
 
 function fitSpineToView() {
   if (!state.spine) return;
@@ -1292,7 +997,6 @@ function onViewerPointerMove(event) {
   const dy = event.clientY - state.panStart.y;
   state.spineLayer.x = state.panOrigin.x + dx;
   state.spineLayer.y = state.panOrigin.y + dy;
-  renderDebugBounds();
 }
 
 
@@ -1319,7 +1023,6 @@ function applyZoom(focusX, focusY) {
   }
 
   state.spineLayer.scale.set(newScale);
-  renderDebugBounds();
 }
 
 

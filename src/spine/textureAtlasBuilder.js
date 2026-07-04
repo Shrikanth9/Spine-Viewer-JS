@@ -262,7 +262,7 @@ function extractSpritesheetFrameToCanvas(sheetImage, frameData) {
 
 async function buildGeneratedAtlasFromLoadedRegions(loadedRegions, report, pageName = '__generated_regions.png') {
   const padding = 2;
-  const maxWidth = 4096;
+  const maxWidth = 2048;
   let x = padding;
   let y = padding;
   let rowHeight = 0;
@@ -330,7 +330,7 @@ async function buildLooseImageAtlasFromUploads(regions) {
   }
 
   const padding = 2;
-  const maxWidth = 4096;
+  const maxWidth = 2048;
   let x = padding;
   let y = padding;
   let rowHeight = 0;

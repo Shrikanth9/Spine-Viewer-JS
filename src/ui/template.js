@@ -1,7 +1,7 @@
 export function getAppTemplate() {
   return `
   <aside class="panel">
-    <h1>Spine Viewer</h1>
+    <h1>Spine Viewer JS</h1>
     <label>Spine files (skeleton .json/.spine, .atlas)</label>
     <input id="skeletonInput" type="file" accept=".json,.spine,.skel,.atlas" multiple />
 
@@ -64,21 +64,12 @@ export function getAppTemplate() {
     <label for="zoomRange">Zoom (wheel or slider): <span id="zoomValue">100%</span></label>
     <input id="zoomRange" type="range" min="10" max="180" value="100" step="1" />
 
-    <h2>Debug Tools</h2>
-    <div class="checkbox-row stacked">
-      <label><input id="showSpineBounds" type="checkbox"/> Spine bounds</label>
-      <label><input id="showSlotBounds" type="checkbox"/> Slot transform points</label>
-      <label><input id="showAttachmentBounds" type="checkbox"/> Attachment bounds</label>
-    </div>
-
 
     <h2>Slots</h2>
-    <p class="small">Click any slot to inspect it. Clicking an <code>rm_</code> slot automatically toggles its transform marker.</p>
+    <p class="small">Click an <code>rm_</code> slot to toggle its transform marker.</p>
     <div id="slotList" class="list"></div>
     <button type="button" id="clearMarksBtn" class="danger">Clear RM Marks</button>
 
-    <h2>Slot / Attachment Inspector</h2>
-    <div id="slotInspector" class="small report-box">Load a Spine and select a slot.</div>
 
     <h2>Image Detection</h2>
     <div id="imageList" class="small"></div>

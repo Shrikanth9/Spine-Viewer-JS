@@ -1,8 +1,8 @@
-# Spine Viewer
+# Spine Viewer JS
 
 A browser-based Spine viewer built with PixiJS 8, Vite, and `@esotericsoftware/spine-pixi-v8`.
 
-The viewer loads Spine assets from local files and provides tools for validating playback, textures, skins, slots, events, bounds, and multi-track animation behavior before assets are integrated into a game.
+The viewer loads Spine assets from local files and provides tools for validating playback, textures, skins, slots, events, and multi-track animation behaviors.
 
 ## Features
 
@@ -21,7 +21,6 @@ The viewer loads Spine assets from local files and provides tools for validating
 - Skin switching
 - Timeline scrub, frame step, pause/resume, playback speed, and loop count controls
 - Slot list and slot/attachment inspector
-- Spine bounds, slot transform points, and attachment bounds preview
 - `rm_` slot transform markers
 - Spine event log
 - Zoom and pan controls
