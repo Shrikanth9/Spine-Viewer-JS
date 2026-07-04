@@ -66,7 +66,6 @@ export function getAppTemplate() {
 
 
     <h2>Slots</h2>
-    <p class="small">Click an <code>rm_</code> slot to toggle its transform marker.</p>
     <div id="slotList" class="list"></div>
     <button type="button" id="clearMarksBtn" class="danger">Clear RM Marks</button>
 
