@@ -26,6 +26,8 @@ const state = {
   spineLayer: new Container(),
   markerObjects: new Map(),
   markedSlots: new Set(),
+  selectedSlotName: '',
+  lastSlotInspectorHtml: '',
   objectUrls: [],
   lastImageReport: [],
   lastAtlasInfo: null,
@@ -88,6 +90,7 @@ const els = {
   zoomRange: document.querySelector('#zoomRange'),
   zoomValue: document.querySelector('#zoomValue'),
   slotList: document.querySelector('#slotList'),
+  slotInspector: document.querySelector('#slotInspector'),
   clearMarksBtn: document.querySelector('#clearMarksBtn'),
   imageList: document.querySelector('#imageList'),
   eventLog: document.querySelector('#eventLog'),
@@ -374,6 +377,7 @@ function cleanupCurrentSpine() {
   state.currentTrackIndex = 0;
   state.currentTrackEntry = null;
   state.selectedTrackNumber = 0;
+  state.selectedSlotName = '';
   state.zoom = 1;
   state.zoomBase = 1;
   if (els.loopCount) els.loopCount.value = '0';
@@ -388,6 +392,7 @@ function cleanupCurrentSpine() {
   els.animationSelect.innerHTML = '';
   els.skinSelect.innerHTML = '';
   els.slotList.innerHTML = '';
+  renderSlotInspector();
   els.imageList.innerHTML = '';
   renderActiveTracks();
 }
@@ -773,6 +778,7 @@ function onAppTick() {
   if (!state.isPaused) updateTimelineDisplay();
   renderActiveTracks();
   if (state.rootMotionPreview) renderRootMotionInfo();
+  if (state.selectedSlotName) renderSlotInspector();
 }
 
 function updateTimelineDisplay() {
@@ -850,8 +856,9 @@ function renderSlotList() {
     const name = slot.name;
     const marked = state.markedSlots.has(name);
     const rmSlot = isRmSlot(name);
+    const selected = state.selectedSlotName === name;
     return `
-      <div class="slot-row ${rmSlot ? 'rm-slot' : ''} ${marked ? 'marked' : ''}" data-slot="${escapeHtml(name)}">
+      <div class="slot-row ${rmSlot ? 'rm-slot' : ''} ${marked ? 'marked' : ''} ${selected ? 'selected' : ''}" data-slot="${escapeHtml(name)}">
         <span title="${escapeHtml(name)}">${escapeHtml(name)}</span>
         ${rmSlot ? `<span class="slot-status">${marked ? 'RM marked' : 'RM'}</span>` : '<span></span>'}
       </div>`;
@@ -867,11 +874,196 @@ function renderSlotList() {
 function selectSlot(slotName) {
   if (!slotName) return;
 
+  state.selectedSlotName = slotName;
+
   if (isRmSlot(slotName)) {
     toggleSlotMark(slotName, { renderList: false });
   }
 
   renderSlotList();
+  renderSlotInspector();
+}
+
+function renderSlotInspector() {
+  if (!els.slotInspector) return;
+
+  if (!state.spine) {
+    updateSlotInspectorHtml('Load a Spine and select a slot.');
+    return;
+  }
+
+  const slotName = state.selectedSlotName;
+  if (!slotName) {
+    updateSlotInspectorHtml('Select a slot from the slot list to inspect attachment, bone, color, and bounds.');
+    return;
+  }
+
+  const slot = findRuntimeSlot(slotName);
+  const slotData = findSlotData(slotName);
+  if (!slot && !slotData) {
+    updateSlotInspectorHtml(`Slot not found: ${escapeHtml(slotName)}`);
+    return;
+  }
+
+  const attachment = slot?.attachment || null;
+  const attachmentName = attachment?.name || slotData?.attachmentName || '(none)';
+  const attachmentType = attachment?.constructor?.name || (attachment ? 'Attachment' : '(none)');
+  const bone = slot?.bone || null;
+  const color = slot?.color || null;
+  const active = Boolean(attachment) && (!color || color.a > 0.001);
+  const attachmentBounds = getAttachmentStageBounds(slot);
+  const blendMode = formatBlendMode(slotData?.blendMode ?? slot?.data?.blendMode ?? slot?.blendMode);
+
+  const rows = [
+    ['Slot', slotName],
+    ['Attachment', attachmentName],
+    ['Attachment type', attachmentType],
+    ['Active', active ? 'true' : 'false'],
+    ['Blend mode', blendMode],
+    ['Color', color ? formatColor(color) : '(runtime color unavailable)'],
+    ['Bone', bone?.data?.name || bone?.name || slotData?.boneData?.name || '(none)'],
+    ['Bone world', bone ? `x=${formatNumber(bone.worldX)}, y=${formatNumber(bone.worldY)}, rot=${formatNumber(getBoneRotation(bone))}°` : '(unavailable)'],
+    ['Bounds', attachmentBounds ? `x=${formatNumber(attachmentBounds.x)}, y=${formatNumber(attachmentBounds.y)}, w=${formatNumber(attachmentBounds.width)}, h=${formatNumber(attachmentBounds.height)}` : '(no drawable attachment bounds)']
+  ];
+
+  const html = `
+    <div class="inspector-grid">
+      ${rows.map(([label, value]) => `<div>${escapeHtml(label)}</div><div>${escapeHtml(value)}</div>`).join('')}
+    </div>`;
+  updateSlotInspectorHtml(html);
+}
+
+function updateSlotInspectorHtml(html) {
+  if (state.lastSlotInspectorHtml === html) return;
+  state.lastSlotInspectorHtml = html;
+  els.slotInspector.innerHTML = html;
+}
+
+function findRuntimeSlot(slotName) {
+  const skeleton = state.spine?.skeleton;
+  if (!skeleton) return null;
+  if (typeof skeleton.findSlot === 'function') return skeleton.findSlot(slotName);
+  return skeleton.slots?.find((slot) => slot?.data?.name === slotName || slot?.name === slotName) || null;
+}
+
+function findSlotData(slotName) {
+  const data = getSkeletonData();
+  if (!data) return null;
+  if (typeof data.findSlot === 'function') return data.findSlot(slotName);
+  return data.slots?.find((slot) => slot?.name === slotName) || null;
+}
+
+function getAttachmentName(attachment) {
+  return attachment?.name || attachment?.path || attachment?.data?.name || 'none';
+}
+
+function getAttachmentType(attachment) {
+  if (!attachment) return 'none';
+  const ctorName = attachment.constructor?.name;
+  return ctorName || attachment.type || 'attachment';
+}
+
+function getAttachmentStageBounds(slot) {
+  const points = getAttachmentStagePoints(slot);
+  if (!points.length) return null;
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const point of points) {
+    minX = Math.min(minX, point.x);
+    minY = Math.min(minY, point.y);
+    maxX = Math.max(maxX, point.x);
+    maxY = Math.max(maxY, point.y);
+  }
+
+  if (![minX, minY, maxX, maxY].every(Number.isFinite)) return null;
+  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+}
+
+function getAttachmentStagePoints(slot) {
+  return getAttachmentSpineLocalPoints(slot).map((point) => spinePointToStage(point.x, point.y));
+}
+
+function getAttachmentSpineLocalPoints(slot) {
+  const attachment = slot?.attachment;
+  if (!attachment) return [];
+
+  if (typeof attachment.computeWorldVertices === 'function') {
+    const worldVertexCount = Number(attachment.worldVerticesLength || 0);
+    if (worldVertexCount > 0) {
+      try {
+        const vertices = new Float32Array(worldVertexCount);
+        attachment.computeWorldVertices(slot, 0, worldVertexCount, vertices, 0, 2);
+        return readPointArray(vertices);
+      } catch {
+        // Some runtime attachment signatures differ. Try the common region path below.
+      }
+    }
+
+    try {
+      const vertices = new Float32Array(8);
+      attachment.computeWorldVertices(slot, vertices, 0, 2);
+      return readPointArray(vertices);
+    } catch {
+      // Fall through to the bone origin.
+    }
+  }
+
+  const bone = slot?.bone;
+  return bone ? [{ x: bone.worldX, y: bone.worldY }] : [];
+}
+
+function readPointArray(values) {
+  const points = [];
+  for (let index = 0; index < values.length; index += 2) {
+    const x = values[index];
+    const y = values[index + 1];
+    if (Number.isFinite(x) && Number.isFinite(y)) points.push({ x, y });
+  }
+  return points;
+}
+
+function spinePointToStage(x, y) {
+  const point = { x, y };
+  try {
+    if (state.spine?.worldTransform?.apply) return state.spine.worldTransform.apply(point);
+    if (state.spine?.toGlobal) return state.spine.toGlobal(point);
+  } catch {
+    // Keep the original point if transform conversion is unavailable.
+  }
+  return point;
+}
+
+function formatColor(color) {
+  const r = Math.round((color.r ?? 1) * 255).toString(16).padStart(2, '0');
+  const g = Math.round((color.g ?? 1) * 255).toString(16).padStart(2, '0');
+  const b = Math.round((color.b ?? 1) * 255).toString(16).padStart(2, '0');
+  return `#${r}${g}${b}, alpha=${formatNumber(color.a ?? 1)}`;
+}
+
+function formatBlendMode(blendMode) {
+  if (blendMode == null) return '(default)';
+  if (typeof blendMode === 'string') return blendMode;
+  if (typeof blendMode === 'number') return ['normal', 'additive', 'multiply', 'screen'][blendMode] || String(blendMode);
+  return blendMode.name ? blendMode.name : String(blendMode);
+}
+
+function getBoneRotation(bone) {
+  if (typeof bone?.getWorldRotationX === 'function') return bone.getWorldRotationX();
+  if (Number.isFinite(bone?.worldRotation)) return bone.worldRotation;
+  if (Number.isFinite(bone?.rotation)) return bone.rotation;
+  return 0;
+}
+
+function formatNumber(value) {
+  return Number.isFinite(value) ? value.toFixed(2) : 'n/a';
+}
+
+function formatDegrees(value) {
+  return Number.isFinite(value) ? `${value.toFixed(2)}°` : 'n/a';
 }
 
 function isRmSlot(slotName) {

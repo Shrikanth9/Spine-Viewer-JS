@@ -69,6 +69,8 @@ export function getAppTemplate() {
     <div id="slotList" class="list"></div>
     <button type="button" id="clearMarksBtn" class="danger">Clear RM Marks</button>
 
+    <h2>Slot / Attachment Inspector</h2>
+    <div id="slotInspector" class="small report-box">Load a Spine and select a slot.</div>
 
     <h2>Image Detection</h2>
     <div id="imageList" class="small"></div>
